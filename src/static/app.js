@@ -27,7 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <div class="participants-section">
               <strong>Participants:</strong>
               <ul class="participants-list">
-                ${details.participants.map(email => `<li>${email}</li>`).join("")}
+                ${details.participants.map(email => `<li><span class="participant-email">${email}</span> <span class="delete-participant" title="Remove participant" data-activity="${name}" data-email="${email}">&#128465;</span></li>`).join("")}
               </ul>
             </div>
           `;
@@ -98,6 +98,29 @@ document.addEventListener("DOMContentLoaded", () => {
       messageDiv.className = "error";
       messageDiv.classList.remove("hidden");
       console.error("Error signing up:", error);
+    }
+  });
+
+  // Handle participant delete (unregister)
+  activitiesList.addEventListener("click", async (event) => {
+    if (event.target.classList.contains("delete-participant")) {
+      const activity = event.target.getAttribute("data-activity");
+      const email = event.target.getAttribute("data-email");
+      if (confirm(`Remove ${email} from ${activity}?`)) {
+        try {
+          const response = await fetch(`/activities/${encodeURIComponent(activity)}/unregister?email=${encodeURIComponent(email)}`, {
+            method: "POST"
+          });
+          const result = await response.json();
+          if (response.ok) {
+            fetchActivities();
+          } else {
+            alert(result.detail || "Failed to remove participant.");
+          }
+        } catch (error) {
+          alert("Error removing participant.");
+        }
+      }
     }
   });
 
