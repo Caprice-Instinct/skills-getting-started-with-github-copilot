@@ -20,24 +20,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const spotsLeft = details.max_participants - details.participants.length;
 
-        // Participants list (no bullets, with delete icon)
-        let participantsHTML = '<div class="participants-list" style="list-style:none; padding-left:0;">';
-        details.participants.forEach(email => {
-          participantsHTML += `
-            <div class="participant-item" style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-              <span>${email}</span>
-              <button class="delete-participant" title="Remove" data-activity="${encodeURIComponent(name)}" data-email="${encodeURIComponent(email)}" style="background:none;border:none;color:#c62828;cursor:pointer;font-size:18px;line-height:1;">&#128465;</button>
+        // Participants section
+        let participantsHTML = "";
+        if (details.participants.length > 0) {
+          participantsHTML = `
+            <div class="participants-section">
+              <strong>Participants:</strong>
+              <ul class="participants-list">
+                ${details.participants.map(email => `<li><span class="participant-email">${email}</span> <span class="delete-participant" title="Remove participant" data-activity="${name}" data-email="${email}">&#128465;</span></li>`).join("")}
+              </ul>
             </div>
           `;
-        });
-        participantsHTML += '</div>';
+        } else {
+          participantsHTML = `
+            <div class="participants-section no-participants">
+              <em>No participants yet.</em>
+            </div>
+          `;
+        }
 
         activityCard.innerHTML = `
           <h4>${name}</h4>
           <p>${details.description}</p>
           <p><strong>Schedule:</strong> ${details.schedule}</p>
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
-          <div><strong>Participants:</strong></div>
           ${participantsHTML}
         `;
 
@@ -122,6 +128,29 @@ document.addEventListener("DOMContentLoaded", () => {
       messageDiv.className = "error";
       messageDiv.classList.remove("hidden");
       console.error("Error signing up:", error);
+    }
+  });
+
+  // Handle participant delete (unregister)
+  activitiesList.addEventListener("click", async (event) => {
+    if (event.target.classList.contains("delete-participant")) {
+      const activity = event.target.getAttribute("data-activity");
+      const email = event.target.getAttribute("data-email");
+      if (confirm(`Remove ${email} from ${activity}?`)) {
+        try {
+          const response = await fetch(`/activities/${encodeURIComponent(activity)}/unregister?email=${encodeURIComponent(email)}`, {
+            method: "POST"
+          });
+          const result = await response.json();
+          if (response.ok) {
+            fetchActivities();
+          } else {
+            alert(result.detail || "Failed to remove participant.");
+          }
+        } catch (error) {
+          alert("Error removing participant.");
+        }
+      }
     }
   });
 
